@@ -13,6 +13,7 @@ import CategoryMangement from "./pages/CategoryManagement";
 import SpecificationManagement from "./pages/SpecificationManagement";
 import ProductManagement from "./pages/ProductManagement";
 import OrderManagement from "./pages/OrdersManagement";
+import PaymentManagement from "./pages/PaymentManagement";
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -43,6 +44,7 @@ const App = () => {
           <Route path="specification" element={<SpecificationManagement />} />
           <Route path="product" element={<ProductManagement />} />
           <Route path="order" element={<OrderManagement />} />
+          <Route path="payment" element={<PaymentManagement />} />
         </Route>
         <Route path="/" element={<Navigate to="/login" replace />} />
       </Routes>

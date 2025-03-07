@@ -9,6 +9,7 @@ import {
   Settings,
   LogOut,
   ClipboardList,
+  DollarSign,
 } from "lucide-react";
 
 const MenuBar = () => {
@@ -39,6 +40,11 @@ const MenuBar = () => {
       title: "Order Management",
       icon: <BarChart2 size={20} />,
       path: "/dashboard/order",
+    },
+    {
+      title: "Payment Management",
+      icon: <DollarSign size={20} />,
+      path: "/dashboard/payment",
     },
     {
       title: "Settings",
