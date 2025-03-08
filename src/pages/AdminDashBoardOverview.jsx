@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 import {
   LineChart,
   Line,
@@ -31,87 +32,123 @@ const AdminDashboardOverview = () => {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
+      // Get token from local storage
+      const token = localStorage.getItem("token");
+
+      // Configure axios headers with token
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
       try {
-        // Fetch overall stats
-        const statsResponse = await fetch(
-          "http://localhost:5000/api/admin/dashboard/stats",
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
+        // Fetch overall metrics
+        const metricsResponse = await axios.get(
+          "http://localhost:5000/api/dashboard/metrics",
+          config
         );
 
-        if (statsResponse.ok) {
-          const statsData = await statsResponse.json();
+        if (metricsResponse.data) {
           setStats({
-            totalUsers: statsData.totalUsers || 0,
-            totalProducts: statsData.totalProducts || 0,
-            totalOrders: statsData.totalOrders || 0,
-            totalRevenue: statsData.totalRevenue || 0,
-            lowStockProducts: statsData.lowStockProducts || 0,
-            pendingOrders: statsData.pendingOrders || 0,
+            totalUsers: metricsResponse.data.totalUsers || 0,
+            totalProducts: metricsResponse.data.totalProducts || 0,
+            totalOrders: metricsResponse.data.totalOrders || 0,
+            totalRevenue: metricsResponse.data.totalRevenue || 0,
+            lowStockProducts: metricsResponse.data.lowestStockProduct ? 1 : 0,
+            pendingOrders: metricsResponse.data.pendingOrders || 0,
           });
         }
 
-        // Fetch revenue data
-        const revenueResponse = await fetch(
-          "http://localhost:5000/api/admin/dashboard/revenue",
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
+        // Fetch monthly revenue data
+        const revenueResponse = await axios.get(
+          "http://localhost:5000/api/dashboard/monthly-revenue",
+          config
         );
 
-        if (revenueResponse.ok) {
-          const revenueData = await revenueResponse.json();
-          setRevenueData(revenueData.data || []);
+        if (revenueResponse.data) {
+          // Transform monthly revenue data to chart format
+          const months = [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+          ];
+          const formattedRevenueData = revenueResponse.data.map(
+            (value, index) => ({
+              name: months[index],
+              value: value,
+            })
+          );
+          setRevenueData(formattedRevenueData);
         }
 
         // Fetch product category distribution
-        const categoryResponse = await fetch(
-          "http://localhost:5000/api/admin/dashboard/categories",
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
+        const categoryResponse = await axios.get(
+          "http://localhost:5000/api/dashboard/category-stock",
+          config
         );
 
-        if (categoryResponse.ok) {
-          const categoryData = await categoryResponse.json();
-          setProductCategoryData(categoryData.data || []);
+        if (categoryResponse.data) {
+          // Transform category data to chart format
+          const formattedCategoryData = categoryResponse.data.map((item) => ({
+            name: item.category,
+            value: item.stock,
+          }));
+          setProductCategoryData(formattedCategoryData);
         }
 
         // Fetch order status distribution
-        const orderStatusResponse = await fetch(
-          "http://localhost:5000/api/admin/dashboard/order-status",
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
+        const orderStatusResponse = await axios.get(
+          "http://localhost:5000/api/dashboard/order-status",
+          config
         );
 
-        if (orderStatusResponse.ok) {
-          const orderStatusData = await orderStatusResponse.json();
-          setOrderStatusData(orderStatusData.data || []);
+        if (orderStatusResponse.data) {
+          // Define colors for status
+          const statusColors = {
+            Delivered: "#4CAF50",
+            Shipped: "#2196F3",
+            Pending: "#FF9800",
+            Cancelled: "#F44336",
+          };
+
+          // Transform order status data to chart format
+          const formattedOrderData = Object.entries(
+            orderStatusResponse.data
+          ).map(([name, value]) => ({
+            name,
+            value,
+            color: statusColors[name],
+          }));
+          setOrderStatusData(formattedOrderData);
         }
 
         // Fetch top selling products
-        const topProductsResponse = await fetch(
-          "http://localhost:5000/api/admin/dashboard/top-products",
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
+        const topProductsResponse = await axios.get(
+          "http://localhost:5000/api/dashboard/top-selling",
+          config
         );
 
-        if (topProductsResponse.ok) {
-          const topProductsData = await topProductsResponse.json();
-          setTopSellingProducts(topProductsData.data || []);
+        if (topProductsResponse.data) {
+          // Transform top selling products data to table format
+          const formattedTopProducts = topProductsResponse.data.map(
+            (product, index) => ({
+              id: index + 1,
+              name: product.name,
+              sold: product.soldUnits,
+              revenue: product.revenue,
+            })
+          );
+          setTopSellingProducts(formattedTopProducts);
         }
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
@@ -119,49 +156,6 @@ const AdminDashboardOverview = () => {
     };
 
     fetchDashboardData();
-
-    // For demo purposes, let's set some sample data
-    // Remove this in production and rely on the API responses
-    setRevenueData([
-      { name: "Jan", value: 5000 },
-      { name: "Feb", value: 7500 },
-      { name: "Mar", value: 6800 },
-      { name: "Apr", value: 9000 },
-      { name: "May", value: 8200 },
-      { name: "Jun", value: 11000 },
-    ]);
-
-    setProductCategoryData([
-      { name: "Smartphones", value: 45 },
-      { name: "Accessories", value: 25 },
-      { name: "Tablets", value: 15 },
-      { name: "Wearables", value: 10 },
-      { name: "Other", value: 5 },
-    ]);
-
-    setOrderStatusData([
-      { name: "Delivered", value: 65, color: "#4CAF50" },
-      { name: "Processing", value: 20, color: "#2196F3" },
-      { name: "Pending", value: 10, color: "#FF9800" },
-      { name: "Cancelled", value: 5, color: "#F44336" },
-    ]);
-
-    setTopSellingProducts([
-      { id: 1, name: "iPhone 14 Pro", sold: 324, revenue: 389999 },
-      { id: 2, name: "Samsung Galaxy S23", sold: 256, revenue: 279999 },
-      { id: 3, name: "AirPods Pro", sold: 187, revenue: 46750 },
-      { id: 4, name: "iPad Air", sold: 142, revenue: 170399 },
-      { id: 5, name: "Apple Watch Series 8", sold: 98, revenue: 107800 },
-    ]);
-
-    setStats({
-      totalUsers: 1245,
-      totalProducts: 378,
-      totalOrders: 892,
-      totalRevenue: 1257850,
-      lowStockProducts: 12,
-      pendingOrders: 37,
-    });
   }, []);
 
   const recentActivities = [
@@ -200,7 +194,7 @@ const AdminDashboardOverview = () => {
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "USD",
+      currency: "LKR",
       minimumFractionDigits: 2,
     }).format(amount);
   };
@@ -259,10 +253,10 @@ const AdminDashboardOverview = () => {
           <div className="flex flex-col">
             <p className="text-sm font-medium text-gray-500">Total Revenue</p>
             <div className="flex items-center mt-2">
-              <span className="text-xl font-bold">
+              <span className="text-[60] font-bold">
                 {formatCurrency(stats.totalRevenue)}
               </span>
-              <span className="text-xl text-yellow-500 ml-2">💰</span>
+              <span className="text-xl text-yellow-500 ml-1">💰</span>
             </div>
           </div>
         </div>
@@ -301,7 +295,7 @@ const AdminDashboardOverview = () => {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
-                <Tooltip formatter={(value) => [`$${value}`, "Revenue"]} />
+                <Tooltip formatter={(value) => [`LKR ${value}`, "Revenue"]} />
                 <Line
                   type="monotone"
                   dataKey="value"
@@ -339,7 +333,7 @@ const AdminDashboardOverview = () => {
                     />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value) => [`${value}%`, "Percentage"]} />
+                <Tooltip formatter={(value) => [`${value}`, "Units"]} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -357,7 +351,7 @@ const AdminDashboardOverview = () => {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
-                <Tooltip formatter={(value) => [`${value}%`, "Percentage"]} />
+                <Tooltip formatter={(value) => [`${value}`, "Orders"]} />
                 <Bar dataKey="value">
                   {orderStatusData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
