@@ -395,7 +395,7 @@ const PaymentManagement = () => {
                         {methodPayments.map((payment) => (
                           <tr key={payment._id} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {payment.order_id._id.substring(0, 8)}...
+                              {payment.order_id?._id?.substring(0, 8)}...
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm font-medium text-gray-900">
